@@ -129,7 +129,44 @@ pointing at a folder of *several* projects merges all of them and reports
 cross-project divergences, which is noise. If you want one machine, point at that
 machine's artifacts.
 
-**Read the `divergences` list on the first call.** It is often the most important
+### If you point at the native project by mistake
+
+The `.mwt` and its folders are the most natural thing to point at, and they are the
+one thing that cannot answer questions: the code is in a compound binary. Rather
+than returning an empty result, `open_project` and `get_sources` add an
+`exportGuidance` block that says what is missing, what it costs, and the export steps
+above — so the agent can tell you instead of guessing.
+
+```
+issue     : no_export_found        severity: blocking
+summary   : Only the native MotionWorks project was found. Its code is stored in a
+            proprietary compound binary (src.st1), so nothing here can supply
+            source code, variables, types or I/O configuration.
+cannot    : any POU source code / variables, types, enums / I/O configuration
+can       : POU names, task names, program-to-task assignment, .DIT interfaces
+howToExport: plcopenXml [...steps...], extendedIec [...steps...]
+foundNearby: [plcopen_xml] TopCutter.xml          ← name matches this project
+             [extended_iec] Extended IEC 61131-2 Export/TopCutter
+suggestedPaths: ...\PLCOpen XML Export\TopCutter.xml
+                ...\Extended IEC 61131-2 Export\TopCutter
+nextStep  : Both exports for this project already exist: ... — one open_project call
+            reads one path, so copy both into one folder and point at that folder.
+```
+
+So if the exports already exist anywhere nearby, you get told where they are rather
+than being sent back to the IDE. Two levels up and down from the path you gave are
+searched, and a *name match* is preferred — suggesting another machine's export would
+be worse than suggesting nothing.
+
+A partial load gets the same treatment, with the reason attached:
+
+| Situation | `issue` | What it tells you |
+|---|---|---|
+| native project only | `no_export_found` | blocking — no code is readable at all |
+| Extended export only | `plcopen_xml_missing` | no type definitions, so no block interfaces; graphical logic only 16 % recovered |
+| PLCopen XML only | `extended_iec_missing` | I/O configuration, task names and `AT %` addresses are absent |
+
+### Read the `divergences` list on the first call.** It is often the most important
 thing about a project, because the exports are incomplete in different ways. Merging
 one sample project's XML and Extended exports reports five:
 

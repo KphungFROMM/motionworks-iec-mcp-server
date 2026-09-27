@@ -18,7 +18,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from motionworks_iec_mcp_server import codegen, fwlib
+from motionworks_iec_mcp_server import codegen, fwlib, guidance
 from motionworks_iec_mcp_server.model import Language, Project, Var
 from motionworks_iec_mcp_server.parsers.st import count_statements
 from motionworks_iec_mcp_server.parsers.xref import XrefIndex
@@ -140,6 +140,26 @@ def _libraries_for(project: Project) -> list[str]:
     return merged
 
 
+def _export_guidance(project: Project, path: str) -> dict[str, Any] | None:
+    """Instruction to include when a source is missing — or ``None`` when it is not.
+
+    Never allowed to break the tool it decorates: a failure to *describe* what is
+    missing must not turn a working load into an error.
+    """
+
+    try:
+        return guidance.export_guidance(project, path)
+    except Exception as exc:  # pragma: no cover - defensive
+        return {
+            "issue": "guidance_unavailable",
+            "note": (
+                "A source is missing from this project, and the export instructions "
+                "could not be assembled "
+                f"({type(exc).__name__}: {exc}). See WORKFLOW.md section 2."
+            ),
+        }
+
+
 def _reference_pin_map() -> dict[str, set[str]] | None:
     """``{block: {pin names}}`` from the firmware reference, for pin validation.
 
@@ -236,13 +256,25 @@ def open_project(path: str) -> str:
     the Extended export has, or ship them with an empty body), so a divergence is
     often the most important thing about a project.
 
+    **If you passed a native project (``.mwt``) with no export beside it**, the
+    response also carries an ``exportGuidance`` block. Its code lives in a compound
+    binary, so no source, variables, types or I/O can be read. The block says exactly
+    what is missing, what that costs you, the verbatim steps to produce each export,
+    and — if exports exist elsewhere on disk — the path to the one matching this
+    project. Relay those steps to the user rather than guessing at the code.
+
     Args:
         path: File or directory to open.
     """
     result = _open(path)
     if isinstance(result, str):
         return result
-    return _dump(result.summary())
+    project: Project = result
+    payload = project.summary()
+    guidance = _export_guidance(project, path)
+    if guidance is not None:
+        payload["exportGuidance"] = guidance
+    return _dump(payload)
 
 
 @mcp.tool
@@ -263,7 +295,10 @@ def get_sources(path: str) -> str:
     """Report which export forms exist for a project and what each contributes.
 
     Use this when a tool returns less than you expected: it says which sources are
-    readable, what each one supplied, and exactly where they disagree.
+    readable, what each one supplied, and exactly where they disagree. When a source
+    is missing — including the common case of a native project with no export beside
+    it — the response carries an ``exportGuidance`` block with the steps to produce
+    it, taken from MotionWorks' own help.
 
     Args:
         path: File or directory to inspect.
@@ -283,7 +318,7 @@ def get_sources(path: str) -> str:
             stats["withCode"] += 1
         stats["languages"][pou.language] = stats["languages"].get(pou.language, 0) + 1
 
-    return _dump({
+    payload: dict[str, Any] = {
         "path": project.path,
         "name": project.name,
         "detected": detect(path),
@@ -302,7 +337,11 @@ def get_sources(path: str) -> str:
         "divergences": [d.to_dict() for d in project.divergences],
         "notes": project.notes,
         "tree": project.tree[:120],
-    })
+    }
+    guidance = _export_guidance(project, path)
+    if guidance is not None:
+        payload["exportGuidance"] = guidance
+    return _dump(payload)
 
 
 # --------------------------------------------------------------------------

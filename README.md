@@ -322,6 +322,19 @@ them, and against the **firmware reference** otherwise — which matters because
 Extended-only project carries no type definitions at all, so without it the pin
 check would silently do nothing for exactly the projects that need it.
 
+A native project looks like the real thing and is the most natural path to point at,
+but its code is a compound binary. So when a source is missing, `open_project` and
+`get_sources` return an **`exportGuidance`** block rather than a hollow result: what is
+missing, what it costs, the verified export steps, and — if exports exist elsewhere on
+disk — the path to the one matching this project. An agent handed a bare `.mwt` can
+therefore tell you what to do instead of guessing at code it cannot see.
+
+| Situation | `issue` | Consequence |
+|---|---|---|
+| native project only | `no_export_found` | nothing readable — no source, variables or types |
+| Extended export only | `plcopen_xml_missing` | no type definitions, so no block interfaces; 16 % graphical pin recovery |
+| PLCopen XML only | `extended_iec_missing` | no I/O configuration, task names or `AT %` addresses |
+
 ### `render_pou_source(name, pou_type?, language?, declaration?, code?, description?)`
 Emit a POU in the shape MotionWorks' **Extended IEC 61131-2 export** uses — the
 `(*@PROPERTIES_EX@ ... *)` header, the `PROGRAM`/`FUNCTION_BLOCK` line, declaration
