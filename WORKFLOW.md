@@ -11,13 +11,17 @@ Anything I could not verify is marked as such instead of being smoothed over.
 
 ## 1. Install (once)
 
-Not published on PyPI, so install from a checkout:
+Not published on PyPI, so install from the repository:
 
 ```bash
+git clone https://github.com/KphungFROMM/motionworks-iec-mcp-server.git
 cd motionworks-iec-mcp-server
 python -m venv .venv
-.venv/Scripts/python -m pip install -e .
+.venv/Scripts/python -m pip install -e ".[dev]"
 ```
+
+`.[dev]` adds pytest so you can run the suite; `pip install -e .` alone is enough to
+run the server. On macOS or Linux the path is `.venv/bin/python`.
 
 Point your MCP client at the console script — an absolute path, because the client
 starts it from its own working directory:

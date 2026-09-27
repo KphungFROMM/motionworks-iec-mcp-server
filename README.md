@@ -86,9 +86,16 @@ comments intact.
 
 ## Installation
 
+Not on PyPI — install from the repository:
+
 ```bash
-pip install motionworks-iec-mcp-server
+git clone https://github.com/KphungFROMM/motionworks-iec-mcp-server.git
+cd motionworks-iec-mcp-server
+python -m venv .venv
+.venv/Scripts/python -m pip install -e .
 ```
+
+`pip install -e ".[dev]"` additionally installs pytest, for running the suite.
 
 Requires Python 3.10+. The firmware library reference additionally needs Windows
 with `hh.exe` and PowerShell; without them everything else still works and library
