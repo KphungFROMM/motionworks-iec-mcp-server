@@ -1,0 +1,20 @@
+# Normalise line endings in the repository so a contributor on Linux or macOS does
+# not see every line of every file as changed. Text is stored with LF; the working
+# copy on Windows may still be CRLF, which Git handles transparently.
+* text=auto eol=lf
+
+# Files whose bytes must never be rewritten.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.xlsx binary
+*.docx binary
+
+# A guard rather than a rule about current content: the firmware library reference is
+# decompiled from Yaskawa's installed help, and none of it belongs in this repository.
+# Binary marking at least prevents Git from mangling it if it is ever added by mistake.
+*.chm binary
+*.hhc binary
+*.hhk binary

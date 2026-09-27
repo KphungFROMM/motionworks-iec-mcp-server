@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "motionworks-iec-mcp-server"
+version = "0.1.0"
+description = "MCP server for Yaskawa MotionWorks IEC — parse PLCopen XML and Extended IEC 61131-2 exports and give AI agents structured access to POUs, variables, types, tasks, and motion configuration"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "MotionWorks IEC MCP" }]
+keywords = [
+    "motionworks",
+    "yaskawa",
+    "iec61131",
+    "plcopen",
+    "plc",
+    "mcp",
+    "industrial-automation",
+    "motion-control",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = ["fastmcp==3.2.3"]
+
+[project.optional-dependencies]
+# Running the test suite. Declared so `pip install -e ".[dev]"` is enough — the
+# suite is the only way to tell a working change from a plausible one.
+dev = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://github.com/KphungFROMM/motionworks-iec-mcp-server"
+
+[project.scripts]
+motionworks-iec-mcp-server = "motionworks_iec_mcp_server.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/motionworks_iec_mcp_server"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
