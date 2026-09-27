@@ -3,6 +3,12 @@
 # copy on Windows may still be CRLF, which Git handles transparently.
 * text=auto eol=lf
 
+# Windows batch files MUST be CRLF. cmd.exe parses LF-only batch files unreliably —
+# multi-line constructs and labels can be misread as commands — and the failure is
+# silent until the script is run. These are the one exception to the LF rule above.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
 # Files whose bytes must never be rewritten.
 *.png binary
 *.jpg binary

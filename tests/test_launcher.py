@@ -52,6 +52,24 @@ def _ok(result: subprocess.CompletedProcess) -> bool:
 
 
 class TestLauncher:
+    def test_the_launcher_is_pure_crlf(self):
+        """cmd.exe parses LF-only batch files unreliably.
+
+        This shipped broken once: ``.gitattributes`` applied ``eol=lf`` to everything,
+        so the launcher was LF-only in the repository and would be checked out that
+        way — multi-line constructs and labels can then be misread as commands. Batch
+        files are the one exception to the LF rule and ``.gitattributes`` pins
+        ``*.cmd text eol=crlf``; this asserts the working copy matches.
+        """
+
+        raw = LAUNCHER.read_bytes()
+        crlf = raw.count(b"\r\n")
+        lone_lf = raw.count(b"\n") - crlf
+        assert crlf > 0 and lone_lf == 0, (
+            f"launcher has {crlf} CRLF pairs and {lone_lf} bare LF; a batch file must "
+            "be pure CRLF (see .gitattributes)"
+        )
+
     def test_launcher_starts_with_a_clean_environment(self):
         assert _ok(_run(["cmd", "/c", str(LAUNCHER), "--help"], hostile=False))
 
