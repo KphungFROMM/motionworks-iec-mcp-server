@@ -11,7 +11,14 @@ Anything I could not verify is marked as such instead of being smoothed over.
 
 ## 1. Install (once)
 
-Not published on PyPI, so install from the repository:
+Install straight from the repository — this is the "git link" route, no manual clone:
+
+```bash
+python -m venv .venv
+.venv/Scripts/python -m pip install "git+https://github.com/KphungFROMM/motionworks-iec-mcp-server.git"
+```
+
+Or clone first, which is what you want if you intend to modify it:
 
 ```bash
 git clone https://github.com/KphungFROMM/motionworks-iec-mcp-server.git
@@ -22,6 +29,35 @@ python -m venv .venv
 
 `.[dev]` adds pytest so you can run the suite; `pip install -e .` alone is enough to
 run the server. On macOS or Linux the path is `.venv/bin/python`.
+
+With [uv](https://docs.astral.sh/uv/) installed you can skip the venv entirely — uv
+fetches and runs from the URL on demand, so the client command becomes the git link:
+
+```bash
+uvx --from "git+https://github.com/KphungFROMM/motionworks-iec-mcp-server.git" \
+    motionworks-iec-mcp-server
+```
+
+### Why there is no such thing as a pure remote MCP server here
+
+MCP over **stdio** works by the client *spawning a process*: the `command` field is a
+program on disk, and the two talk over that process's standard input and output.
+There is no "URL" transport in MCP, so something has to exist locally — a git link
+changes how that local thing gets *installed*, not whether it is local.
+
+That is not a limitation of this server, and for this server it is beside the point
+anyway: **it reads local files**. It parses your MotionWorks exports and extracts the
+firmware reference from the MotionWorks installation on that machine. Hosted on a
+server somewhere else, it would have nothing to read.
+
+So the practical rule is: the MCP server runs on the same PC as MotionWorks. A git
+URL is how you get it there in one command.
+
+Clients that offer an **HTTP** transport option (the harness dialog has one) are for
+servers fronting a service, typically bound to `http://127.0.0.1:<port>/mcp` — still
+local. This server does expose SSE/HTTP via `--transport sse`, which is useful for a
+second client on the same machine or on a trusted network segment, but it still needs
+MotionWorks beside it.
 
 Point your MCP client at the console script — an absolute path, because the client
 starts it from its own working directory:

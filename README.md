@@ -86,7 +86,14 @@ comments intact.
 
 ## Installation
 
-Not on PyPI — install from the repository:
+Install straight from the repository — no clone needed:
+
+```bash
+python -m venv .venv
+.venv/Scripts/python -m pip install "git+https://github.com/KphungFROMM/motionworks-iec-mcp-server.git"
+```
+
+Or clone first, if you intend to modify it:
 
 ```bash
 git clone https://github.com/KphungFROMM/motionworks-iec-mcp-server.git
@@ -100,6 +107,14 @@ python -m venv .venv
 Requires Python 3.10+. The firmware library reference additionally needs Windows
 with `hh.exe` and PowerShell; without them everything else still works and library
 signatures fall back to what the project itself reveals.
+
+**It has to run locally.** MCP over stdio works by the client spawning a process, so
+the client needs a program on disk — a git URL changes how that program gets
+installed, not whether it is local. And it is moot here anyway: the server reads your
+MotionWorks exports and the firmware reference from the machine it runs on, so it
+belongs on the PC with MotionWorks installed. See
+[WORKFLOW.md §1](WORKFLOW.md#1-install-once) for the reasoning, and for running it
+from a URL with `uvx`.
 
 ## Quick Start
 
