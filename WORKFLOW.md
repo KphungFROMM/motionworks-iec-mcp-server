@@ -40,6 +40,73 @@ starts it from its own working directory:
 On macOS/Linux use `.venv/bin/motionworks-iec-mcp-server`. Everything except the
 firmware library reference works there; see §7.
 
+### If your client is an agent harness, use the launcher instead
+
+Point the client at `scripts\motionworks-iec-mcp-server.cmd` and leave Arguments and
+Environment empty:
+
+```json
+{
+  "mcpServers": {
+    "motionworks": {
+      "command": "C:/path/to/motionworks-iec-mcp-server/scripts/motionworks-iec-mcp-server.cmd",
+      "args": []
+    }
+  }
+}
+```
+
+It does the same thing as the console script, but clears `PYTHONHOME`, `PYTHONPATH`
+and `PYTHONSTARTUP` first. That is not defensive padding — it fixes a concrete
+failure. Some harnesses export `PYTHONHOME` for their own bundled Python, and a venv
+`python.exe` that inherits a `PYTHONHOME` pointing somewhere invalid dies *during
+interpreter startup*, before any of this project's code runs:
+
+```
+Fatal Python error: init_fs_encoding: failed to get the Python codec
+ModuleNotFoundError: No module named 'encodings'
+```
+
+Measured, both under a hostile `PYTHONHOME`:
+
+| Command | Clean env | Hostile env |
+|---|---|---|
+| `.venv\Scripts\motionworks-iec-mcp-server.exe` | works, 28 tools | **no response at all** |
+| `scripts\motionworks-iec-mcp-server.cmd` | works, 28 tools | works, 28 tools |
+
+The symptom in the client is a server that simply never connects, with nothing in
+the log to explain it. `tests/test_launcher.py` pins this behaviour.
+
+If you would rather not use the launcher, set `PYTHONHOME` to an empty value in the
+client's Environment field instead. Setting it to empty works; leaving it inherited
+from a hostile harness does not.
+
+### Adding it through a GUI that asks for fields
+
+Some harnesses (DSH / AryaAI, and others with a "Add MCP server" dialog) ask for the
+command as separate fields. Fill them in like this:
+
+| Field | Value |
+|---|---|
+| **Transport** | `stdio` |
+| **Name** | `motionworks` — a short lowercase id; it becomes the tool prefix, e.g. `motionworks.open_project` |
+| **Command** | `C:\path\to\motionworks-iec-mcp-server\scripts\motionworks-iec-mcp-server.cmd` |
+| **Arguments** | *leave empty* — stdio takes no arguments |
+| **Environment** | *leave empty* — the launcher already clears the Python variables |
+
+Two things worth knowing:
+
+* The **Command must be absolute.** Clients launch it from their own working
+  directory, so a relative path resolves somewhere else entirely.
+* Prefer the `.cmd` launcher over the `.exe` in these dialogs specifically, because
+  you cannot see what environment the harness hands the process. See above.
+
+If you would rather point straight at the `.exe`, add this to Environment to be safe:
+
+```
+PYTHONHOME=
+```
+
 Nothing else needs configuring. The server finds your MotionWorks installation
 itself, and the first call that needs library knowledge extracts the vendor help
 into `%LOCALAPPDATA%\motionworks-iec-mcp\fwlib` (about 1.4 s, once per version).
@@ -279,6 +346,9 @@ Without it, graphical logic is understood fully in structure but only 16 % of pi
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| the server never connects, nothing in the log | a harness-set `PYTHONHOME` killed the interpreter at startup | point Command at `scripts\motionworks-iec-mcp-server.cmd`, or set `PYTHONHOME=` in Environment |
+| `ModuleNotFoundError: No module named 'encodings'` | same cause — Python never found its own standard library | same fix |
+| the tool list is empty or shows 0 tools | the process started but exited; check it runs by hand | run the Command with `--help` in a terminal |
 | a POU's task reads `task@10@00:00:01.0` | only the PLCopen XML export describes that task, and it does not carry names | nothing to fix — the *schedule* is known (priority 10, 1 s) even though the name is not |
 | `task_program_conflict` divergence | the two exports are different generations of the project | read it; decide which export is current, and re-export the other |
 | `typeCount: 0`, no block signatures | Extended export only — it carries no type definitions | produce the PLCopen XML export too |

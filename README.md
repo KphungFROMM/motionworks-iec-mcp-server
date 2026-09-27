@@ -123,12 +123,36 @@ motionworks-iec-mcp-server --transport sse --host 127.0.0.1 --port 8080
 {
   "mcpServers": {
     "motionworks": {
-      "command": "motionworks-iec-mcp-server",
+      "command": "C:/path/to/motionworks-iec-mcp-server/.venv/Scripts/motionworks-iec-mcp-server.exe",
       "args": []
     }
   }
 }
 ```
+
+### Agent harnesses: use the launcher
+
+If your client is an agent harness that may set `PYTHONHOME` for its own bundled
+Python, point it at the launcher instead — a venv `python.exe` inheriting an invalid
+`PYTHONHOME` dies during interpreter startup, before any of this code runs, and the
+client just reports a server that will not connect:
+
+```json
+{
+  "mcpServers": {
+    "motionworks": {
+      "command": "C:/path/to/motionworks-iec-mcp-server/scripts/motionworks-iec-mcp-server.cmd",
+      "args": []
+    }
+  }
+}
+```
+
+The launcher clears `PYTHONHOME`, `PYTHONPATH` and `PYTHONSTARTUP` and then runs the
+same server. Measured under a hostile `PYTHONHOME`: the bare `.exe` returns no
+response, the launcher returns 28 tools. [WORKFLOW.md](WORKFLOW.md) has the
+field-by-field version for GUI clients that ask for command/arguments/environment
+separately.
 
 ### Environment variables
 
